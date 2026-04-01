@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUM ====================
+
+enum Role {
+  OWNER
+  OPERATOR
+}
+
+enum StatusSesi {
+  BUKA
+  TUTUP
+}
+
+enum StatusProduk {
+  AKTIF
+  NONAKTIF
+}
+
+enum JenisMutasi {
+  MASUK
+  KELUAR
+  PENYESUAIAN
+}
+
+enum MetodeBayar {
+  TUNAI
+  QRIS
+  TRANSFER
+}
+
+enum JenisKeuangan {
+  MASUK
+  KELUAR
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id        String   @id @default(uuid())
+  nama      String
+  email     String   @unique
+  password  String
+  tokoId    String?  @map("toko_id")
+  role      Role     @default(OPERATOR)
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  toko              Toko?               @relation(fields: [tokoId], references: [id])
+  sesiToko          SesiToko[]
+  logAktivitas      LogAktivitas[]
+  mutasiStok        MutasiStok[]
+  transaksiPos      TransaksiPos[]
+  transaksiKeuangan TransaksiKeuangan[]
+
+  @@map("users")
+}
+
+model LogAktivitas {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  aksi      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("log_aktivitas")
+}
+
+model Toko {
+  id             String   @id @default(uuid())
+  nama           String
+  logo           String?
+  alamat         String?
+  noHp           String?  @map("no_hp")
+  jamOperasional String?  @map("jam_operasional")
+  strukHeader    String?  @map("struk_header")
+  strukFooter    String?  @map("struk_footer")
+  pajakPersen    Float    @default(0) @map("pajak_persen")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  users             User[]
+  sesiToko          SesiToko[]
+  produk            Produk[]
+  kategoriProduk    KategoriProduk[]
+  kategoriKeuangan  KategoriKeuangan[]
+  transaksiKeuangan TransaksiKeuangan[]
+
+  @@map("toko")
+}
+
+model SesiToko {
+  id              String     @id @default(uuid())
+  tokoId          String     @map("toko_id")
+  userId          String     @map("user_id")
+  modalAwal       Float      @default(0) @map("modal_awal")
+  totalTransaksi  Float      @default(0) @map("total_transaksi")
+  totalPendapatan Float      @default(0) @map("total_pendapatan")
+  waktuBuka       DateTime   @default(now()) @map("waktu_buka")
+  waktuTutup      DateTime?  @map("waktu_tutup")
+  status          StatusSesi @default(BUKA)
+
+  toko         Toko           @relation(fields: [tokoId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  transaksiPos TransaksiPos[]
+
+  @@map("sesi_toko")
+}
+
+model Produk {
+  id          String       @id @default(uuid())
+  tokoId      String       @map("toko_id")
+  kategoriId  String?      @map("kategori_id")
+  nama        String
+  sku         String?
+  foto        String?
+  hargaBeli   Float        @default(0) @map("harga_beli")
+  hargaJual   Float        @default(0) @map("harga_jual")
+  stok        Int          @default(0)
+  stokMinimal Int          @default(0) @map("stok_minimal")
+  satuan      String?
+  status      StatusProduk @default(AKTIF)
+
+  toko          Toko            @relation(fields: [tokoId], references: [id])
+  kategori      KategoriProduk? @relation(fields: [kategoriId], references: [id])
+  itemTransaksi ItemTransaksi[]
+  mutasiStok    MutasiStok[]
+
+  @@map("produk")
+}
+
+model KategoriProduk {
+  id     String @id @default(uuid())
+  tokoId String @map("toko_id")
+  nama   String
+
+  toko   Toko     @relation(fields: [tokoId], references: [id])
+  produk Produk[]
+
+  @@map("kategori_produk")
+}
+
+model MutasiStok {
+  id          String      @id @default(uuid())
+  produkId    String      @map("produk_id")
+  userId      String      @map("user_id")
+  jenis       JenisMutasi
+  jumlah      Int
+  stokSebelum Int         @map("stok_sebelum")
+  stokSesudah Int         @map("stok_sesudah")
+  keterangan  String?
+  tanggal     DateTime    @default(now())
+
+  produk Produk @relation(fields: [produkId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("mutasi_stok")
+}
+
+model TransaksiPos {
+  id           String      @id @default(uuid())
+  sesiId       String      @map("sesi_id")
+  userId       String      @map("user_id")
+  subtotal     Float       @default(0)
+  diskon       Float       @default(0)
+  pajak        Float       @default(0)
+  grandTotal   Float       @default(0) @map("grand_total")
+  metodeBayar  MetodeBayar @map("metode_bayar")
+  nominalBayar Float       @default(0) @map("nominal_bayar")
+  kembalian    Float       @default(0)
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  sesi          SesiToko      @relation(fields: [sesiId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  itemTransaksi ItemTransaksi[]
+
+  @@map("transaksi_pos")
+}
+
+model ItemTransaksi {
+  id          String @id @default(uuid())
+  transaksiId String @map("transaksi_id")
+  produkId    String @map("produk_id")
+  qty         Int
+  hargaSatuan Float  @map("harga_satuan")
+  subtotal    Float
+
+  transaksi TransaksiPos @relation(fields: [transaksiId], references: [id])
+  produk    Produk       @relation(fields: [produkId], references: [id])
+
+  @@map("item_transaksi")
+}
+
+model KategoriKeuangan {
+  id     String        @id @default(uuid())
+  tokoId String        @map("toko_id")
+  nama   String
+  jenis  JenisKeuangan
+
+  toko              Toko                @relation(fields: [tokoId], references: [id])
+  transaksiKeuangan TransaksiKeuangan[]
+
+  @@map("kategori_keuangan")
+}
+
+model TransaksiKeuangan {
+  id         String        @id @default(uuid())
+  tokoId     String        @map("toko_id")
+  userId     String        @map("user_id")
+  kategoriId String        @map("kategori_id")
+  tanggal    DateTime      @default(now())
+  nominal    Float
+  jenis      JenisKeuangan
+  keterangan String?
+  buktiUrl   String?       @map("bukti_url")
+
+  toko     Toko             @relation(fields: [tokoId], references: [id])
+  user     User             @relation(fields: [userId], references: [id])
+  kategori KategoriKeuangan @relation(fields: [kategoriId], references: [id])
+
+  @@map("transaksi_keuangan")
+}
