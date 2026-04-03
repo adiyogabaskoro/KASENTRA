@@ -1,0 +1,82 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-main);
+  overflow-x: hidden;
+}
+
+.pageHeader {
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breadcrumbs {
+  font-size: 14px;
+  color: var(--color-gray-600);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumbs span:last-child {
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-gray-200);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.roleBadge {
+  background-color: var(--color-brand-blue);
+  color: var(--color-brand-blue-text);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pageContent {
+  padding: 0 32px 32px;
+  flex: 1;
+}
