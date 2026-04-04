@@ -1,0 +1,237 @@
+.container {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 24px;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  text-align: left;
+  padding: 16px 24px;
+  font-size: 14px;
+}
+
+th {
+  font-weight: 600;
+  color: var(--color-gray-600);
+  border-bottom: 1px solid var(--color-border);
+}
+
+tr {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--color-gray-50);
+}
+
+th:nth-child(3), td:nth-child(3) {
+  text-align: center;
+}
+
+.lihatRincian {
+  background: none;
+  border: none;
+  color: var(--color-gray-500);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.lihatRincian:hover {
+  color: var(--color-brand-blue-text);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background-color: var(--color-white);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  padding: 32px 28px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 12px;
+}
+
+.btnClose {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Store Header in receipt */
+.storeHeader {
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.8;
+  color: var(--color-gray-600);
+  font-size: 13px;
+}
+
+/* Info rows */
+.infoTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.infoTable td {
+  padding: 5px 0;
+  border: none;
+}
+
+.infoTable td:last-child {
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Dashed divider */
+.dashed {
+  border: none;
+  border-top: 1px dashed var(--color-gray-400);
+  margin: 16px 0;
+}
+
+/* Items table */
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.itemsTable th {
+  color: var(--color-gray-500);
+  font-weight: 500;
+  padding: 6px 0;
+  border: none;
+  text-align: left;
+}
+
+.itemsTable th:last-child,
+.itemsTable td:last-child {
+  text-align: right;
+}
+
+.itemsTable th:nth-child(2),
+.itemsTable td:nth-child(2) {
+  text-align: center;
+}
+
+.itemsTable td {
+  padding: 6px 0;
+  border: none;
+  font-size: 13px;
+  color: var(--color-text-main);
+}
+
+/* Totals section */
+.totalsSection {
+  width: 100%;
+  font-size: 14px;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  color: var(--color-gray-600);
+}
+
+.grandTotal {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+/* Modal Actions */
+.modalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btnRetur {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #FF4A4A;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnRetur:hover {
+  opacity: 0.9;
+}
+
+.btnCetak {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--color-brand-blue-text);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnCetak:hover {
+  opacity: 0.9;
+}

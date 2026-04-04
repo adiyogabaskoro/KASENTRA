@@ -19,6 +19,14 @@
   justify-content: space-between;
 }
 
+/* Kasir Layout header — 3 sections: breadcrumb, shift, user */
+.pageHeaderKasir {
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .breadcrumbs {
   font-size: 14px;
   color: var(--color-gray-600);
@@ -79,4 +87,37 @@
 .pageContent {
   padding: 0 32px 32px;
   flex: 1;
+}
+
+/* Shift info in Kasir header */
+.shiftInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-gray-600);
+}
+
+.shiftLabel {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.shiftSep {
+  color: var(--color-gray-400);
+}
+
+.shiftTime {
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+/* Kasir role badge — same position as Owner but different label */
+.roleBadgeKasir {
+  background-color: var(--color-brand-blue);
+  color: var(--color-brand-blue-text);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
 }
