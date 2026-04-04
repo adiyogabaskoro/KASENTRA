@@ -220,20 +220,19 @@ input:checked + .slider:before {
   background-color: var(--color-danger-bg);
 }
 
-.leftCol {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.profileCard {
+  grid-row: span 2;
 }
 
-.rightCol {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.profileCard .cardActions {
+  margin-top: auto;
 }
 
 @media (max-width: 1024px) {
   .settingContainer {
     grid-template-columns: 1fr;
+  }
+  .profileCard {
+    grid-row: span 1;
   }
 }
