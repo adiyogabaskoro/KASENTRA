@@ -9,6 +9,8 @@ import TransaksiKasir from './pages/TransaksiKasir';
 import Setting from './pages/Setting';
 import Keuangan from './pages/Keuangan';
 import Operator from './pages/Operator';
+import StatusToko from './pages/StatusToko';
+import Laporan from './pages/Laporan';
 
 function App() {
   return (
@@ -20,9 +22,9 @@ function App() {
         {/* Owner Routes */}
         <Route path="/dashboard" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="laporan" element={<div>Halaman Laporan (WIP)</div>} />
+          <Route path="laporan" element={<Laporan />} />
           <Route path="keuangan" element={<Keuangan />} />
-          <Route path="status-toko" element={<div>Halaman Status Toko (WIP)</div>} />
+          <Route path="status-toko" element={<StatusToko />} />
           <Route path="operator" element={<Operator />} />
           <Route path="setting" element={<Setting />} />
         </Route>
