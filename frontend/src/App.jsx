@@ -12,6 +12,8 @@ import Keuangan from './pages/Keuangan';
 import Operator from './pages/Operator';
 import StatusToko from './pages/StatusToko';
 import Laporan from './pages/Laporan';
+import Stock from './pages/Stock';
+import Category from './pages/Category';
 
 function App() {
   return (
@@ -35,6 +37,12 @@ function App() {
           <Route index element={<DashboardKasir />} />
           <Route path="transaksi-kasir" element={<MenuKasir />} />
           <Route path="transaksi" element={<TransaksiKasir />} />
+          <Route path="setting" element={<Setting />} />
+        </Route>
+
+        {/* Operator Routes */}
+        <Route path="/operator" element={<LayoutOperator />}>
+          <Route index element={<Stock />} />
           <Route path="setting" element={<Setting />} />
         </Route>
 
