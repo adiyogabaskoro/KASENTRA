@@ -26,9 +26,22 @@ export default function Login() {
     let passError = '';
     let roleError = '';
 
+<<<<<<< Updated upstream
     // Role restriction
     if (role !== 'owner') {
       roleError = 'Akses dibatasi, saat ini hanya Role Owner yang tersedia';
+=======
+    // Credentials per role
+    const credentials = {
+      owner: { id: 'admin', password: 'password123' },
+      kasir: { id: 'kasir', password: 'kasir1234' },
+      operator: { id: 'operator', password: 'operator123' },
+    };
+
+    // Role validation
+    if (!role) {
+      roleError = 'Silakan pilih role terlebih dahulu';
+>>>>>>> Stashed changes
     }
 
     // Simple validation simulation (for UI demonstration)
@@ -51,8 +64,20 @@ export default function Login() {
       return;
     }
 
+<<<<<<< Updated upstream
     // Success redirect
     navigate('/dashboard');
+=======
+    // Simpan role ke sessionStorage lalu redirect
+    sessionStorage.setItem('userRole', role);
+    if (role === 'kasir') {
+      navigate('/kasir');
+    } else if (role === 'operator') {
+      navigate('/operator');
+    } else {
+      navigate('/dashboard');
+    }
+>>>>>>> Stashed changes
   };
 
   return (
