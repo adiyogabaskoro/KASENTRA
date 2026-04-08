@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
 import LayoutKasir from './components/LayoutKasir';
+import LayoutOperator from './components/LayoutOperator';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import DashboardKasir from './pages/DashboardKasir';

@@ -25,9 +25,6 @@ export default function Login() {
     let passError = '';
     let roleError = '';
 
-    // Role restriction
-    if (role !== 'owner') {
-      roleError = 'Akses dibatasi, saat ini hanya Role Owner yang tersedia';
     // Credentials per role
     const credentials = {
       owner: { id: 'admin', password: 'password123' },
@@ -39,7 +36,7 @@ export default function Login() {
     if (!role) {
       roleError = 'Silakan pilih role terlebih dahulu';
     }
-      
+
     if (!roleError) {
       const cred = credentials[role];
       if (idUser !== cred.id) {
