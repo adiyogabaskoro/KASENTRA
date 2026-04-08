@@ -12,6 +12,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import Dropdown from '../components/Dropdown';
+import { PeriodeDropdown, DateFilterBtn } from '../components/PeriodFilter';
 import styles from './Keuangan.module.css';
 
 export default function Keuangan() {
@@ -34,6 +35,11 @@ export default function Keuangan() {
   const [showRows, setShowRows] = useState('5');
   const [modalType, setModalType] = useState('masuk');
   const [modalCategory, setModalCategory] = useState('modal');
+
+  // Period filter state
+  const [periode, setPeriode] = useState('Bulanan');
+  const [dateValue, setDateValue] = useState(null);
+  const handlePeriodeChange = (p) => { setPeriode(p); setDateValue(null); };
 
   const handleDeleteClick = (id) => {
     setItemToDelete(id);
@@ -85,11 +91,12 @@ export default function Keuangan() {
             />
           </div>
 
-          <div className={styles.filterGroup}>
-            <button className={styles.filterDate}>
-              <Calendar size={16} />
-              Filter periode
-            </button>
+          <div className={styles.filterGroup} style={{ border: 'none', padding: 0 }}>
+            <PeriodeDropdown value={periode} onChange={handlePeriodeChange} />
+          </div>
+
+          <div className={styles.filterGroup} style={{ border: 'none', padding: 0 }}>
+            <DateFilterBtn periode={periode} value={dateValue} onChange={setDateValue} />
           </div>
         </div>
 
