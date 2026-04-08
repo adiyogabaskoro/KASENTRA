@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import DashboardKasir from './pages/DashboardKasir';
 import TransaksiKasir from './pages/TransaksiKasir';
+import MenuKasir from './pages/MenuKasir';
 import Setting from './pages/Setting';
 import Keuangan from './pages/Keuangan';
 import Operator from './pages/Operator';
@@ -32,7 +33,7 @@ function App() {
         {/* Kasir Routes */}
         <Route path="/kasir" element={<LayoutKasir />}>
           <Route index element={<DashboardKasir />} />
-          <Route path="transaksi-kasir" element={<div>Halaman Kasir (WIP)</div>} />
+          <Route path="transaksi-kasir" element={<MenuKasir />} />
           <Route path="transaksi" element={<TransaksiKasir />} />
           <Route path="setting" element={<Setting />} />
         </Route>

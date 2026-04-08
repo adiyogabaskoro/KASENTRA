@@ -105,7 +105,7 @@ export default function Dashboard() {
             <div className={styles.iconBadge}><ArrowDown size={14} /></div>
           </div>
           <div className={styles.cardContent}>
-            <span className={styles.cardValue}>65</span>
+            <span className={styles.cardValue}>+ Rp.900.000</span>
             <span className={styles.cardLabel}>Total Pemasukan</span>
             <span className={styles.cardChange}><ArrowDown size={12} /> 25% (30 days)</span>
           </div>
