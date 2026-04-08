@@ -1,0 +1,283 @@
+/* ── Periode Dropdown ── */
+.dropWrap {
+  position: relative;
+}
+
+.dropBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.dropBtn:hover {
+  border-color: #3b82f6;
+}
+
+.dropMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  z-index: 100;
+  min-width: 140px;
+  overflow: hidden;
+  animation: fadeDown 0.15s ease;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dropItem {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--color-text-main);
+  cursor: pointer;
+}
+
+.dropItem:hover {
+  background: #f3f4f6;
+}
+
+.dropItemActive {
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+/* ── Date Button ── */
+.dateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-main);
+  cursor: pointer;
+}
+
+.dateBtn:hover {
+  border-color: #3b82f6;
+}
+
+/* ── Date Picker Popup ── */
+.datePickerWrap {
+  position: relative;
+}
+
+.calDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.13);
+  z-index: 300;
+  padding: 16px;
+  animation: fadeDown 0.15s ease;
+}
+
+.calDropTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3b82f6;
+  margin: 0 0 12px 2px;
+  text-transform: capitalize;
+}
+
+/* ── Cal Box (shared wrapper) ── */
+.calBox {
+  min-width: 260px;
+}
+
+.calHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.calMonthLabel {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.calNav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+}
+.calNav:hover { background: var(--color-gray-100); }
+
+/* Year dropdown */
+.yearWrap { position: relative; }
+.yearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text-main);
+}
+.yearMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  z-index: 400;
+  max-height: 180px;
+  overflow-y: auto;
+  min-width: 80px;
+}
+.yearItem {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text-main);
+}
+.yearItem:hover { background: #f3f4f6; }
+.yearActive { font-weight: 700; color: #3b82f6; background: #eff6ff; }
+
+/* ── Harian grid ── */
+.calDayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.calDayName {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  padding: 4px 0;
+}
+.calGrid7 {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.calCell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: default;
+}
+.calOther { color: #d1d5db; }
+.calCur   { color: var(--color-text-main); cursor: pointer; }
+.calCur:hover { background: #eff6ff; color: #3b82f6; }
+.calSel     { background: #3b82f6 !important; color: #fff !important; font-weight: 700; border-radius: 6px; }
+.calInRange { background: #dbeafe !important; color: #1d4ed8 !important; border-radius: 0; }
+.calToday   { background: #eff6ff; color: #3b82f6; font-weight: 700; }
+
+/* ── Mingguan table ── */
+.weekTableWrap { overflow-x: auto; }
+.weekTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.weekKeTh {
+  text-align: left;
+  padding: 8px 16px 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  white-space: nowrap;
+}
+.weekDayTh {
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  background: #f3f4f6;
+}
+.weekRowOverflow td { color: #c0c8d4; }
+.weekRowClickable   { cursor: pointer; }
+.weekRowClickable:hover td { background: #f0f7ff; }
+
+.weekRowSel td   { background: #dbeafe !important; }
+.weekRowRange td { background: #dbeafe !important; }
+
+.weekKeTd {
+  padding: 10px 16px 10px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  white-space: nowrap;
+}
+.weekCell {
+  text-align: center;
+  padding: 10px 6px;
+  color: var(--color-text-main);
+  font-size: 13px;
+}
+.weekCellOther { color: #c0c8d4; }
+.weekCellToday {
+  background: #3b82f6 !important;
+  color: #fff !important;
+  border-radius: 8px;
+  font-weight: 700;
+}
+/* ── Bulanan / Tahunan grid ── */
+.monthGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.monthRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.monthCell {
+  padding: 10px 8px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text-main);
+  border: 1px solid transparent;
+}
+.monthCell:hover   { background: #eff6ff; color: #3b82f6; }
+.monthSel          { background: #3b82f6 !important; color: #fff !important; font-weight: 700; border: none; }
+.monthInRange      { background: #dbeafe !important; color: #1d4ed8 !important; border: none; }
+.monthCur          { border-color: #3b82f6; color: #3b82f6; }

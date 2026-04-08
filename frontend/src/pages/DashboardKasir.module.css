@@ -1,0 +1,106 @@
+.dashboardKasirContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Summary Cards */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.summaryCard {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.cardIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: #F4F4F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cardIcon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardValue {
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  line-height: 1;
+}
+
+.cardLabel {
+  font-size: 16px;
+  color: var(--color-gray-600);
+  font-weight: 400;
+}
+
+/* Transaction History */
+.historyCard {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.historyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  text-align: left;
+  padding: 16px 24px;
+  font-size: 14px;
+}
+
+th {
+  font-weight: 600;
+  color: var(--color-gray-600);
+  border-bottom: 1px solid var(--color-border);
+}
+
+tr {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--color-gray-50);
+}
+
+th:last-child, td:last-child {
+  text-align: center;
+}

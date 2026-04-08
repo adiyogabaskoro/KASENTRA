@@ -1,0 +1,142 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cardIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-600);
+  position: relative;
+}
+
+.iconBadge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: var(--color-danger); /* Red down arrow like in screenshot */
+  color: var(--color-white);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-white);
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.cardValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  line-height: 1.2;
+}
+
+.cardLabel {
+  font-size: 14px;
+  color: var(--color-gray-600);
+  margin-bottom: 4px;
+}
+
+.cardChange {
+  font-size: 12px;
+  color: var(--color-danger);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.chartSection, .historySection {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 24px;
+}
+
+.chartContainer {
+  height: 300px;
+  width: 100%;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historyHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr;
+  font-size: 13px;
+  color: var(--color-gray-500);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.historyItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr;
+  font-size: 14px;
+  align-items: center;
+  color: var(--color-text-main);
+}
+
+.historyItem .month {
+  color: var(--color-gray-600);
+}
+
+.historyItem .nominal {
+  text-align: right;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .summaryCards {
+    grid-template-columns: 1fr;
+  }
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+}
