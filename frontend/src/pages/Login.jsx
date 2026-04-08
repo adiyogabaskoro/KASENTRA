@@ -21,16 +21,13 @@ export default function Login() {
   const handleLogin = (e) => {
     e.preventDefault();
     
-    // Reset errors
     let idError = '';
     let passError = '';
     let roleError = '';
 
-<<<<<<< Updated upstream
     // Role restriction
     if (role !== 'owner') {
       roleError = 'Akses dibatasi, saat ini hanya Role Owner yang tersedia';
-=======
     // Credentials per role
     const credentials = {
       owner: { id: 'admin', password: 'password123' },
@@ -41,33 +38,25 @@ export default function Login() {
     // Role validation
     if (!role) {
       roleError = 'Silakan pilih role terlebih dahulu';
->>>>>>> Stashed changes
     }
-
-    // Simple validation simulation (for UI demonstration)
-    if (idUser !== 'admin') {
-      idError = 'ID User yang Anda masukan tidak terdaftar';
-    }
-
-    if (password.length < 8 || password.length > 12) {
-      passError = 'Password yang Anda masukan harus sekitar 8-12 Karakter';
-    } else if (password !== 'password123') {
-      passError = 'Password yang Anda masukan salah';
+      
+    if (!roleError) {
+      const cred = credentials[role];
+      if (idUser !== cred.id) {
+        idError = 'ID User yang Anda masukan tidak terdaftar';
+      }
+      if (password.length < 8 || password.length > 12) {
+        passError = 'Password yang Anda masukan harus sekitar 8-12 Karakter';
+      } else if (password !== cred.password) {
+        passError = 'Password yang Anda masukan salah';
+      }
     }
 
     if (idError || passError || roleError) {
-      setErrors({ 
-        idUser: idError, 
-        password: passError,
-        role: roleError 
-      });
+      setErrors({ idUser: idError, password: passError, role: roleError });
       return;
     }
 
-<<<<<<< Updated upstream
-    // Success redirect
-    navigate('/dashboard');
-=======
     // Simpan role ke sessionStorage lalu redirect
     sessionStorage.setItem('userRole', role);
     if (role === 'kasir') {
@@ -77,7 +66,6 @@ export default function Login() {
     } else {
       navigate('/dashboard');
     }
->>>>>>> Stashed changes
   };
 
   return (

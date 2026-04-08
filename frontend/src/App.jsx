@@ -1,13 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
-<<<<<<< Updated upstream
-=======
 import LayoutKasir from './components/LayoutKasir';
-import LayoutOperator from './components/LayoutOperator';
->>>>>>> Stashed changes
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import DashboardKasir from './pages/DashboardKasir';
+import TransaksiKasir from './pages/TransaksiKasir';
+import MenuKasir from './pages/MenuKasir';
 import Setting from './pages/Setting';
 import Keuangan from './pages/Keuangan';
 import Operator from './pages/Operator';
@@ -23,7 +22,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         
-        {/* Protected Routes (Wrapper inside Layout) */}
+        {/* Owner Routes */}
         <Route path="/dashboard" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="laporan" element={<Laporan />} />
@@ -33,8 +32,6 @@ function App() {
           <Route path="setting" element={<Setting />} />
         </Route>
 
-<<<<<<< Updated upstream
-=======
         {/* Kasir Routes */}
         <Route path="/kasir" element={<LayoutKasir />}>
           <Route index element={<DashboardKasir />} />
@@ -49,7 +46,6 @@ function App() {
           <Route path="setting" element={<Setting />} />
         </Route>
 
->>>>>>> Stashed changes
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
