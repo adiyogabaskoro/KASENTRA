@@ -96,5 +96,5 @@ Pastikan kamu sudah punya:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/kasentra-pos.git
+git clone https://github.com/adiyogabaskoro/KASENTRA.git
 cd kasentra-pos
