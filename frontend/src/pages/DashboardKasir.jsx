@@ -1,6 +1,15 @@
-import styles from './DashboardKasir.module.css';
+// ============================================================
+// KASENTRA — DashboardKasir.jsx (VERSI BARU — Terhubung ke Backend)
+//
+// Perubahan dari versi lama:
+//   ❌ Sebelum: data dummy hardcoded (25 produk, Rp230.000)
+//   ✅ Sekarang: fetch transaksi kasir hari ini dari API
+// ============================================================
 
-// Icons matching the design (basket and wallet icons from the screenshot)
+import { useState, useEffect } from 'react';
+import styles from './DashboardKasir.module.css';
+import { transactionAPI } from '../services/api';
+
 function BasketIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="#7B7B8D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -21,47 +30,75 @@ function WalletIcon() {
   );
 }
 
-const transactions = [
-  { id: '02839726746', time: '13.45', amount: 25000 },
-  { id: '028315287612', time: '13.38', amount: 10000 },
-  { id: '02364347237', time: '13.33', amount: 40000 },
-  { id: '02839536780', time: '13.20', amount: 15000 },
-  { id: '028621168266', time: '13.06', amount: 20000 },
-  { id: '02839000067', time: '12.55', amount: 40000 },
-  { id: '028736376137', time: '12.39', amount: 30000 },
-  { id: '025323723681', time: '12.25', amount: 50000 },
-];
-
-const totalPemasukan = transactions.reduce((sum, t) => sum + t.amount, 0);
+const formatRp = (n) => '+ Rp' + Number(n || 0).toLocaleString('id-ID');
+const formatWaktu = (dateStr) => {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function DashboardKasir() {
+  const [transactions, setTransactions] = useState([]);
+  const [produkTerjual, setProdukTerjual] = useState(0);
+  const [totalPemasukan, setTotalPemasukan] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      // Filter transaksi milik kasir ini saja
+      const params = { kasir: user._id || user.id };
+      const res = await transactionAPI.getAll(params);
+      const all = res.data.data || [];
+
+      // Ambil transaksi hari ini saja
+      const today = new Date().toDateString();
+      const todayTx = all.filter(t => new Date(t.createdAt).toDateString() === today);
+
+      // Hitung statistik
+      const pemasukan = todayTx.reduce((sum, t) => sum + (t.total || 0), 0);
+      const terjual = todayTx.reduce((sum, t) =>
+        sum + (t.items || []).reduce((s, i) => s + (i.qty || 0), 0), 0
+      );
+
+      setTransactions(todayTx.slice(0, 10)); // tampilkan 10 terakhir
+      setTotalPemasukan(pemasukan);
+      setProdukTerjual(terjual);
+    } catch (err) {
+      console.error('Gagal load dashboard kasir:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.dashboardKasirContainer}>
-      
+
       {/* Summary Cards */}
       <div className={styles.summaryGrid}>
-        
-        {/* Produk Terjual */}
+
         <div className={styles.summaryCard}>
-          <div className={styles.cardIcon}>
-            <BasketIcon />
-          </div>
+          <div className={styles.cardIcon}><BasketIcon /></div>
           <div className={styles.cardText}>
-            <span className={styles.cardValue}>25</span>
-            <span className={styles.cardLabel}>Produk Terjual</span>
+            <span className={styles.cardValue}>
+              {loading ? '...' : produkTerjual}
+            </span>
+            <span className={styles.cardLabel}>Produk Terjual Hari Ini</span>
           </div>
         </div>
 
-        {/* Total Pemasukan */}
         <div className={styles.summaryCard}>
-          <div className={styles.cardIcon}>
-            <WalletIcon />
-          </div>
+          <div className={styles.cardIcon}><WalletIcon /></div>
           <div className={styles.cardText}>
             <span className={styles.cardValue}>
-              + Rp{totalPemasukan.toLocaleString('id-ID')}
+              {loading ? '...' : formatRp(totalPemasukan)}
             </span>
-            <span className={styles.cardLabel}>Total Pemasukan</span>
+            <span className={styles.cardLabel}>Total Pemasukan Hari Ini</span>
           </div>
         </div>
 
@@ -69,27 +106,38 @@ export default function DashboardKasir() {
 
       {/* Riwayat Transaksi */}
       <div className={styles.historyCard}>
-        <h2 className={styles.historyTitle}>Riwayat Transaksi</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>ID Order</th>
-              <th>Jam</th>
-              <th>Nominal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((t) => (
-              <tr key={t.id}>
-                <td>{t.id}</td>
-                <td>{t.time}</td>
-                <td>Rp{t.amount.toLocaleString('id-ID')}</td>
+        <h2 className={styles.historyTitle}>Riwayat Transaksi Hari Ini</h2>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280' }}>
+            ⏳ Memuat data...
+          </div>
+        ) : transactions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#9ca3af' }}>
+            Belum ada transaksi hari ini
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>ID Order</th>
+                <th>Jam</th>
+                <th>Nominal</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {transactions.map((t) => (
+                <tr key={t._id}>
+                  <td>{t.noTransaksi || t._id?.slice(-10)}</td>
+                  <td>{formatWaktu(t.createdAt)}</td>
+                  <td>Rp{Number(t.total || 0).toLocaleString('id-ID')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-      
+
     </div>
   );
 }

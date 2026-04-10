@@ -1,115 +1,144 @@
-import { useState } from 'react';
+// ============================================================
+// KASENTRA — TransaksiKasir.jsx (VERSI BARU — Terhubung ke Backend)
+//
+// Perubahan dari versi lama:
+//   ❌ Sebelum: data dummy hardcoded array
+//   ✅ Sekarang: fetch transaksi dari API, tampilkan data real
+// ============================================================
+
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import styles from './TransaksiKasir.module.css';
+import { transactionAPI, settingAPI } from '../services/api';
 
-const transactions = [
-  {
-    id: '02839726746',
-    waktu: '13.45 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 25000,
-    metodePembayaran: 'Qris',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 1, nama: 'Produk 1', harga: 10000 },
-      { jumlah: 1, nama: 'Produk 2', harga: 15000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '028315287612',
-    waktu: '13.38 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 10000,
-    metodePembayaran: 'Tunai',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 1, nama: 'Produk A', harga: 10000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '02364347237',
-    waktu: '13.33 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 40000,
-    metodePembayaran: 'Debit',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 2, nama: 'Produk B', harga: 20000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '02839536780',
-    waktu: '13.20 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 15000,
-    metodePembayaran: 'Qris',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 1, nama: 'Produk C', harga: 15000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '028621168266',
-    waktu: '13.06 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 20000,
-    metodePembayaran: 'Tunai',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 2, nama: 'Produk D', harga: 10000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '02839000067',
-    waktu: '12.55 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 40000,
-    metodePembayaran: 'Debit',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 4, nama: 'Produk E', harga: 10000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '028736376137',
-    waktu: '12.39 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 30000,
-    metodePembayaran: 'Qris',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 3, nama: 'Produk F', harga: 10000 },
-    ],
-    diskon: 0,
-  },
-  {
-    id: '025323723681',
-    waktu: '12.25 WIB',
-    tanggal: '20 Februari 2026',
-    amount: 50000,
-    metodePembayaran: 'Tunai',
-    kasir: 'Shift 1 (Nama Kasir)',
-    items: [
-      { jumlah: 2, nama: 'Produk G', harga: 25000 },
-    ],
-    diskon: 0,
-  },
-];
+// Helper format waktu Indonesia
+function formatWaktu(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+}
+
+// Helper format tanggal Indonesia
+function formatTanggal(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Helper format rupiah
+function formatRp(n) {
+  return 'Rp' + Number(n || 0).toLocaleString('id-ID');
+}
 
 export default function TransaksiKasir() {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
 
-  const subTotal = selectedTx
-    ? selectedTx.items.reduce((sum, i) => sum + i.jumlah * i.harga, 0)
-    : 0;
-  const total = subTotal - (selectedTx?.diskon ?? 0);
+  // Info toko untuk ditampilkan di struk
+  const [storeSetting, setStoreSetting] = useState(null);
 
+  // ============================================================
+  // FETCH DATA saat halaman dibuka
+  // ============================================================
+  useEffect(() => {
+    fetchTransactions();
+    fetchStoreSetting();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      // Ambil kasir yang sedang login
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      // Kasir hanya melihat transaksinya sendiri (filter by kasir ID)
+      const params = user.role === 'kasir' ? { kasir: user._id || user.id } : {};
+      const res = await transactionAPI.getAll(params);
+      setTransactions(res.data.data || []);
+    } catch (err) {
+      setError('Gagal memuat riwayat transaksi. Pastikan backend berjalan.');
+      console.error('Error fetch transactions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStoreSetting = async () => {
+    try {
+      const res = await settingAPI.get();
+      setStoreSetting(res.data.data || null);
+    } catch (err) {
+      // Tidak kritis — struk tetap tampil meski setting gagal
+      console.warn('Gagal load setting toko:', err);
+    }
+  };
+
+  // Hitung sub total dari items transaksi yang dipilih
+  const subTotal = selectedTx
+    ? selectedTx.items.reduce((sum, i) => sum + (i.subtotal || i.hargaJual * i.qty || 0), 0)
+    : 0;
+  const totalDiskon = selectedTx?.diskon ?? 0;
+  const total = selectedTx?.total ?? subTotal - totalDiskon;
+
+  // ============================================================
+  // RENDER — Loading state
+  // ============================================================
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <h2 className={styles.title}>Riwayat Transaksi</h2>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+          ⏳ Memuat data transaksi...
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER — Error state
+  // ============================================================
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <h2 className={styles.title}>Riwayat Transaksi</h2>
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #fca5a5',
+          borderRadius: '8px',
+          padding: '16px',
+          color: '#dc2626',
+          textAlign: 'center',
+        }}>
+          ⚠️ {error}
+          <br />
+          <button
+            onClick={fetchTransactions}
+            style={{ marginTop: '12px', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER — Empty state
+  // ============================================================
+  if (transactions.length === 0) {
+    return (
+      <div className={styles.container}>
+        <h2 className={styles.title}>Riwayat Transaksi</h2>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+          📋 Belum ada transaksi hari ini.
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // RENDER — Main content
+  // ============================================================
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Riwayat Transaksi</h2>
@@ -125,10 +154,13 @@ export default function TransaksiKasir() {
         </thead>
         <tbody>
           {transactions.map((tx) => (
-            <tr key={tx.id}>
-              <td>{tx.id}</td>
-              <td>20/02/2026, {tx.waktu}</td>
-              <td>Rp{tx.amount.toLocaleString('id-ID')}</td>
+            <tr key={tx._id}>
+              {/* Tampilkan noTransaksi (dari backend) atau fallback ke _id */}
+              <td>{tx.noTransaksi || tx._id?.slice(-8)}</td>
+              <td>
+                {formatTanggal(tx.createdAt)}, {formatWaktu(tx.createdAt)}
+              </td>
+              <td>{formatRp(tx.total)}</td>
               <td style={{ textAlign: 'right' }}>
                 <button
                   className={styles.lihatRincian}
@@ -142,52 +174,58 @@ export default function TransaksiKasir() {
         </tbody>
       </table>
 
-      {/* Receipt Modal */}
+      {/* ========================================================
+          MODAL RINCIAN TRANSAKSI
+          ======================================================== */}
       {selectedTx && (
         <div className={styles.modalOverlay} onClick={() => setSelectedTx(null)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            
+
             <h2 className={styles.modalTitle}>Riwayat Transaksi</h2>
             <button className={styles.btnClose} onClick={() => setSelectedTx(null)}>
               <X size={22} />
             </button>
 
-            {/* Store Info */}
+            {/* Info Toko — dari API setting */}
             <div className={styles.storeHeader}>
-              <div>(Nama Toko)</div>
-              <div>(Alamat Toko)</div>
-              <div>(xxx) xxx-xxxx</div>
+              <div>{storeSetting?.namaToko || '(Nama Toko)'}</div>
+              <div>{storeSetting?.alamat || '(Alamat Toko)'}</div>
+              <div>{storeSetting?.hp || '(No. Telepon)'}</div>
             </div>
 
-            {/* Transaction Info */}
+            {/* Info Transaksi */}
             <table className={styles.infoTable}>
               <tbody>
                 <tr>
                   <td>ID Order</td>
-                  <td>{selectedTx.id}</td>
+                  <td>{selectedTx.noTransaksi || selectedTx._id?.slice(-8)}</td>
                 </tr>
                 <tr>
                   <td>Waktu</td>
-                  <td>{selectedTx.waktu}</td>
+                  <td>{formatWaktu(selectedTx.createdAt)}</td>
                 </tr>
                 <tr>
                   <td>Tanggal</td>
-                  <td>{selectedTx.tanggal}</td>
+                  <td>{formatTanggal(selectedTx.createdAt)}</td>
                 </tr>
                 <tr>
                   <td>Metode Pembayaran</td>
-                  <td>{selectedTx.metodePembayaran}</td>
+                  {/* Backend simpan lowercase: 'tunai' | 'qris' */}
+                  <td style={{ textTransform: 'capitalize' }}>
+                    {selectedTx.paymentMethod}
+                  </td>
                 </tr>
                 <tr>
                   <td>Kasir</td>
-                  <td>{selectedTx.kasir}</td>
+                  {/* kasirName disimpan langsung di dokumen transaksi */}
+                  <td>{selectedTx.kasirName || selectedTx.kasir?.name || '-'}</td>
                 </tr>
               </tbody>
             </table>
 
             <hr className={styles.dashed} />
 
-            {/* Item List */}
+            {/* Daftar Item */}
             <table className={styles.itemsTable}>
               <thead>
                 <tr>
@@ -197,12 +235,15 @@ export default function TransaksiKasir() {
                 </tr>
               </thead>
               <tbody>
-                {selectedTx.items.map((item, idx) => (
+                {(selectedTx.items || []).map((item, idx) => (
                   <tr key={idx}>
-                    <td>{item.jumlah}</td>
-                    <td style={{ textAlign: 'center' }}>{item.nama}</td>
+                    <td>{item.qty}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {/* Backend simpan sebagai 'productName' */}
+                      {item.productName || item.nama || '-'}
+                    </td>
                     <td style={{ textAlign: 'right' }}>
-                      Rp{(item.jumlah * item.harga).toLocaleString('id-ID')}
+                      {formatRp(item.subtotal || item.hargaJual * item.qty)}
                     </td>
                   </tr>
                 ))}
@@ -211,26 +252,45 @@ export default function TransaksiKasir() {
 
             <hr className={styles.dashed} />
 
-            {/* Totals */}
+            {/* Total */}
             <div className={styles.totalsSection}>
               <div className={styles.totalRow}>
                 <span>Sub Total</span>
-                <span>Rp{subTotal.toLocaleString('id-ID')}</span>
+                <span>{formatRp(selectedTx.subTotal ?? subTotal)}</span>
               </div>
               <div className={styles.totalRow}>
                 <span>Diskon</span>
-                <span>Rp{(selectedTx.diskon).toLocaleString('id-ID')}</span>
+                <span>{formatRp(selectedTx.diskon ?? 0)}</span>
               </div>
+              {(selectedTx.pajak ?? 0) > 0 && (
+                <div className={styles.totalRow}>
+                  <span>Pajak</span>
+                  <span>{formatRp(selectedTx.pajak)}</span>
+                </div>
+              )}
               <div className={styles.grandTotal}>
                 <span>Total</span>
-                <span>Rp{total.toLocaleString('id-ID')}</span>
+                <span>{formatRp(selectedTx.total ?? total)}</span>
               </div>
+              {selectedTx.paymentMethod === 'tunai' && (
+                <>
+                  <div className={styles.totalRow}>
+                    <span>Bayar</span>
+                    <span>{formatRp(selectedTx.bayar)}</span>
+                  </div>
+                  <div className={styles.totalRow}>
+                    <span>Kembalian</span>
+                    <span>{formatRp(selectedTx.kembalian)}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Actions */}
             <div className={styles.modalActions}>
-              <button className={styles.btnRetur}>Retur</button>
-              <button className={styles.btnCetak}>Cetak Ulang Struk</button>
+              <button className={styles.btnCetak} onClick={() => window.print()}>
+                Cetak Ulang Struk
+              </button>
             </div>
 
           </div>

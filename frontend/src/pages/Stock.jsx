@@ -1,4 +1,12 @@
-import { useState } from 'react';
+// ============================================================
+// KASENTRA — Stock.jsx (VERSI BARU — Terhubung ke Backend API)
+//
+// Perubahan dari versi lama:
+//   ❌ Sebelum: data dummy array hardcoded, simpan di state saja
+//   ✅ Sekarang: fetch dari API, tambah/edit/hapus ke database
+// ============================================================
+
+import { useState, useEffect } from 'react'; // ← tambah useEffect
 import { 
   Search, 
   Plus, 
@@ -7,36 +15,50 @@ import {
   ChevronRight,
   X,
   CheckCircle,
-  ChevronDown,
   Package
 } from 'lucide-react';
 import Dropdown from '../components/Dropdown';
 import styles from './Stock.module.css';
+import { productAPI, categoryAPI } from '../services/api'; // ← IMPORT API
 
 export default function Stock() {
-  const [products, setProducts] = useState([
-    { id: 1, name: 'Produk 1', category: 'Makanan', price: 30000, stock: 200 },
-    { id: 2, name: 'Produk 2', category: 'Minuman', price: 10000, stock: 150 },
-    { id: 3, name: 'Produk 3', category: 'Makanan', price: 5000, stock: 20 },
-    { id: 4, name: 'Produk 4', category: 'Makanan', price: 35000, stock: 49 },
-    { id: 5, name: 'Produk 5', category: 'Minuman', price: 5000, stock: 66 },
-  ]);
+  // ============================================================
+  // STATE — Data dari API
+  // ============================================================
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]); // dari API juga
+  
+  // State untuk loading & error
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
+  // State UI (sama seperti sebelumnya)
   const [showRows, setShowRows] = useState('5');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'safe', 'warning', 'danger'
+  const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
-  const [stockToAdd, setStockToAdd] = useState('');
-  
-  // Stock modal form data
+  const [submitting, setSubmitting] = useState(false); // loading saat submit form
+
+  // Form data untuk tambah produk
+  const [addProductFormData, setAddProductFormData] = useState({
+    name: '',
+    hargaJual: '',
+    idItem: '',
+    tanggalExpired: '',
+    hargaBeli: '',
+    category: '',
+    currentStock: 0,
+    foto: null,           // ← file gambar
+    fotoPreview: null,    // ← preview gambar di UI
+  });
+
+  // Form data untuk edit stok
   const [stockFormData, setStockFormData] = useState({
     name: '',
     hargaJual: '',
@@ -44,33 +66,151 @@ export default function Stock() {
     tanggalExpired: '',
     hargaBeli: '',
     category: '',
-    currentStock: 0
+    currentStock: 0,
+    foto: null,
+    fotoPreview: null,
   });
 
-  // Form states for Add/Edit Product
-  const [formData, setFormData] = useState({
-    name: '',
-    category: 'Makanan',
-    price: '',
-    stock: ''
-  });
-  
-  // Add Product modal form data (same as stock modal)
-  const [addProductFormData, setAddProductFormData] = useState({
-    name: '',
-    hargaJual: '',
-    idItem: '',
-    tanggalExpired: '',
-    hargaBeli: '',
-    category: 'Makanan',
-    currentStock: 0
-  });
+  // ============================================================
+  // FETCH DATA — Dijalankan saat komponen pertama kali dibuka
+  // ============================================================
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []); // [] artinya hanya dijalankan sekali saat komponen mount
 
-  // Calculate category counts
-  const categoryStats = {
-    'Stok Aman': products.filter(p => p.stock >= 100).length,
-    'Stok Menipis': products.filter(p => p.stock >= 50 && p.stock < 100).length,
-    'Stok Habis': products.filter(p => p.stock < 50).length,
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await productAPI.getAll();
+      // Backend mengembalikan { success: true, data: [...] }
+      setProducts(response.data.data || []);
+    } catch (err) {
+      setError('Gagal memuat data produk. Pastikan backend berjalan.');
+      console.error('Error fetch products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryAPI.getAll();
+      setCategories(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetch categories:', err);
+    }
+  };
+
+  // ============================================================
+  // TAMBAH PRODUK BARU — Kirim ke API
+  // ============================================================
+  const handleAddProduct = async () => {
+    if (!addProductFormData.name || !addProductFormData.hargaJual) {
+      alert('Nama dan harga jual wajib diisi!');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Karena ada upload foto, kita pakai FormData (bukan JSON biasa)
+      const formData = new FormData();
+      formData.append('name', addProductFormData.name);
+      formData.append('hargaJual', addProductFormData.hargaJual);
+      formData.append('idItem', addProductFormData.idItem);
+      formData.append('hargaBeli', addProductFormData.hargaBeli);
+      formData.append('category', addProductFormData.category);
+      formData.append('stock', addProductFormData.currentStock);
+      if (addProductFormData.tanggalExpired) {
+        formData.append('tanggalExpired', addProductFormData.tanggalExpired);
+      }
+      if (addProductFormData.foto) {
+        formData.append('image', addProductFormData.foto); // field 'image' sesuai backend (upload.single('image'))
+      }
+
+      await productAPI.create(formData);
+
+      // Refresh data dari server
+      await fetchProducts();
+
+      // Reset form dan tutup modal
+      setShowAddModal(false);
+      setAddProductFormData({
+        name: '', hargaJual: '', idItem: '', tanggalExpired: '',
+        hargaBeli: '', category: '', currentStock: 0, foto: null, fotoPreview: null,
+      });
+
+      showToast('Sukses, Produk berhasil ditambahkan');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Gagal menambah produk';
+      alert('Error: ' + msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ============================================================
+  // EDIT / UPDATE STOK — Kirim ke API
+  // ============================================================
+  const handleSaveStock = async () => {
+    try {
+      setSubmitting(true);
+
+      const formData = new FormData();
+      formData.append('name', stockFormData.name);
+      formData.append('hargaJual', stockFormData.hargaJual);
+      formData.append('hargaBeli', stockFormData.hargaBeli);
+      formData.append('category', stockFormData.category);
+      formData.append('stock', stockFormData.currentStock);
+      if (stockFormData.tanggalExpired) {
+        formData.append('tanggalExpired', stockFormData.tanggalExpired);
+      }
+      if (stockFormData.foto) {
+        formData.append('image', stockFormData.foto); // field 'image' sesuai backend
+      }
+
+      await productAPI.update(selectedProduct._id, formData);
+
+      await fetchProducts();
+      setShowStockModal(false);
+      setSelectedProduct(null);
+      showToast('Sukses, Stok berhasil diperbarui');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Gagal memperbarui stok';
+      alert('Error: ' + msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ============================================================
+  // HAPUS PRODUK — Kirim ke API
+  // ============================================================
+  const confirmDelete = async () => {
+    try {
+      setSubmitting(true);
+      await productAPI.delete(selectedProduct._id);
+      await fetchProducts();
+      setShowDeleteModal(false);
+      setSelectedProduct(null);
+      showToast('Sukses, Produk berhasil dihapus');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Gagal menghapus produk';
+      alert('Error: ' + msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ============================================================
+  // HELPER FUNCTIONS
+  // ============================================================
+  const showToast = (message) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 3000);
   };
 
   const handleDeleteClick = (product) => {
@@ -78,184 +218,63 @@ export default function Stock() {
     setShowDeleteModal(true);
   };
 
-  const handleEditClick = (product) => {
-    setSelectedProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price.toString(),
-      stock: product.stock.toString()
-    });
-    setShowEditModal(true);
-  };
-
-  const confirmDelete = () => {
-    setProducts(products.filter(p => p.id !== selectedProduct.id));
-    setShowDeleteModal(false);
-    setSelectedProduct(null);
-    
-    setNotificationMessage('Sukses, Produk berhasil dihapus');
-    setShowNotification(true);
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000);
-  };
-
-  const handleAddProduct = () => {
-    const newId = Math.max(...products.map(p => p.id), 0) + 1;
-    setProducts([...products, { 
-      id: newId, 
-      name: addProductFormData.name,
-      category: addProductFormData.category,
-      price: parseInt(addProductFormData.hargaJual) || 0,
-      stock: addProductFormData.currentStock
-    }]);
-    setShowAddModal(false);
-    setAddProductFormData({ 
-      name: '', 
-      hargaJual: '', 
-      idItem: '',
-      tanggalExpired: '',
-      hargaBeli: '',
-      category: 'Makanan', 
-      currentStock: 0 
-    });
-    
-    setNotificationMessage('Sukses, Produk berhasil ditambahkan');
-    setShowNotification(true);
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000);
-  };
-
-  const handleAddProductStockClick = () => {
-    const newStock = addProductFormData.currentStock + 1;
-    setAddProductFormData({
-      ...addProductFormData,
-      currentStock: newStock
-    });
-  };
-
-  const handleEditProduct = () => {
-    setProducts(products.map(p => 
-      p.id === selectedProduct.id 
-        ? { 
-            ...p, 
-            name: formData.name,
-            category: formData.category,
-            price: parseInt(formData.price),
-            stock: parseInt(formData.stock)
-          }
-        : p
-    ));
-    setShowEditModal(false);
-    setSelectedProduct(null);
-    setFormData({ name: '', category: 'Makanan', price: '', stock: '' });
-    
-    setNotificationMessage('Sukses, Produk berhasil diperbarui');
-    setShowNotification(true);
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000);
-  };
-
   const handleStockIncrease = (product) => {
     setSelectedProduct(product);
     setStockFormData({
-      name: product.name,
-      hargaJual: product.price.toString(),
-      idItem: `ITEM-${product.id}`,
-      tanggalExpired: '',
-      hargaBeli: '',
-      category: product.category,
-      currentStock: product.stock
+      name: product.name || product.nama || '',
+      hargaJual: product.hargaJual?.toString() || '',
+      idItem: product.idItem || '',
+      tanggalExpired: product.tanggalExpired ? product.tanggalExpired.substring(0, 10) : '',
+      hargaBeli: product.hargaBeli?.toString() || '',
+      category: product.category?._id || product.category || product.kategori || '',
+      currentStock: product.stock ?? product.stok ?? 0,
+      foto: null,
+      fotoPreview: product.image || product.foto || null,
     });
     setShowStockModal(true);
   };
 
-  const handleAddStockClick = () => {
-    const newStock = stockFormData.currentStock + 1;
-    setStockFormData({
-      ...stockFormData,
-      currentStock: newStock
-    });
-  };
+  const formatPrice = (price) => `Rp${Number(price || 0).toLocaleString('id-ID')}`;
 
-  const handleSaveStock = () => {
-    setProducts(products.map(p => 
-      p.id === selectedProduct.id 
-        ? { 
-            ...p, 
-            name: stockFormData.name,
-            price: parseInt(stockFormData.hargaJual),
-            category: stockFormData.category,
-            stock: stockFormData.currentStock
-          } 
-        : p
-    ));
-    setShowStockModal(false);
-    setSelectedProduct(null);
-    
-    setNotificationMessage('Sukses, Stok berhasil diperbarui');
-    setShowNotification(true);
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000);
-  };
-
-  const formatPrice = (price) => {
-    return `Rp${price.toLocaleString('id-ID')}`;
-  };
-
-  // Filter products based on active filter and search query
+  // Filter & pagination (sama seperti sebelumnya, sesuaikan field nama)
   const getFilteredProducts = () => {
     let filtered = products;
+    const stokField = (p) => p.stok ?? p.stock ?? 0;
 
-    // Apply stock filter
-    if (activeFilter === 'safe') {
-      filtered = filtered.filter(p => p.stock >= 100);
-    } else if (activeFilter === 'warning') {
-      filtered = filtered.filter(p => p.stock >= 50 && p.stock < 100);
-    } else if (activeFilter === 'danger') {
-      filtered = filtered.filter(p => p.stock < 50);
-    }
+    if (activeFilter === 'safe') filtered = filtered.filter(p => stokField(p) >= 100);
+    else if (activeFilter === 'warning') filtered = filtered.filter(p => stokField(p) >= 50 && stokField(p) < 100);
+    else if (activeFilter === 'danger') filtered = filtered.filter(p => stokField(p) < 50);
 
-    // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(p =>
+        (p.nama || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.kategori || p.category || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
     return filtered;
   };
 
   const filteredProducts = getFilteredProducts();
-
-  const handleFilterClick = (filter) => {
-    setActiveFilter(activeFilter === filter ? 'all' : filter);
-    setCurrentPage(1); // Reset to first page when filter changes
+  const stokField = (p) => p.stok ?? p.stock ?? 0;
+  const categoryStats = {
+    'Stok Aman': products.filter(p => stokField(p) >= 100).length,
+    'Stok Menipis': products.filter(p => stokField(p) >= 50 && stokField(p) < 100).length,
+    'Stok Habis': products.filter(p => stokField(p) < 50).length,
   };
 
-  // Pagination logic
   const itemsPerPage = parseInt(showRows);
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const handleFilterClick = (filter) => {
+    setActiveFilter(activeFilter === filter ? 'all' : filter);
+    setCurrentPage(1);
   };
 
-  const handleRowsChange = (value) => {
-    setShowRows(value);
-    setCurrentPage(1); // Reset to first page when rows per page changes
-  };
-
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className={styles.stockContainer}>
       <div className={styles.headerSection}>
@@ -265,169 +284,160 @@ export default function Stock() {
         </div>
       </div>
 
+      {/* ✅ Tampilkan error jika gagal fetch */}
+      {error && (
+        <div style={{
+          background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px',
+          padding: '12px 16px', marginBottom: '16px', color: '#dc2626',
+          display: 'flex', alignItems: 'center', gap: '8px'
+        }}>
+          ⚠️ {error}
+          <button onClick={fetchProducts} style={{ marginLeft: 'auto', textDecoration: 'underline', background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer' }}>
+            Coba lagi
+          </button>
+        </div>
+      )}
+
       {/* Category Stats */}
       <div className={styles.statsRow}>
-        <div 
-          className={`${styles.statCard} ${styles.safe} ${activeFilter === 'safe' ? styles.activeCard : ''}`}
-          onClick={() => handleFilterClick('safe')}
-        >
-          <div className={styles.statIcon}>✓</div>
-          <div className={styles.statInfo}>
-            <span className={styles.statLabel}>Stok Aman</span>
-            <span className={styles.statValue}>{categoryStats['Stok Aman']} Item</span>
+        {[
+          { key: 'safe', label: 'Stok Aman', icon: '✓', count: categoryStats['Stok Aman'] },
+          { key: 'warning', label: 'Stok Menipis', icon: '⚠', count: categoryStats['Stok Menipis'] },
+          { key: 'danger', label: 'Stok Habis', icon: '✕', count: categoryStats['Stok Habis'] },
+        ].map(({ key, label, icon, count }) => (
+          <div
+            key={key}
+            className={`${styles.statCard} ${styles[key]} ${activeFilter === key ? styles.activeCard : ''}`}
+            onClick={() => handleFilterClick(key)}
+          >
+            <div className={styles.statIcon}>{icon}</div>
+            <div className={styles.statInfo}>
+              <span className={styles.statLabel}>{label}</span>
+              <span className={styles.statValue}>{count} Item</span>
+            </div>
           </div>
-        </div>
-        
-        <div 
-          className={`${styles.statCard} ${styles.warning} ${activeFilter === 'warning' ? styles.activeCard : ''}`}
-          onClick={() => handleFilterClick('warning')}
-        >
-          <div className={styles.statIcon}>⚠</div>
-          <div className={styles.statInfo}>
-            <span className={styles.statLabel}>Stok Menipis</span>
-            <span className={styles.statValue}>{categoryStats['Stok Menipis']} Item</span>
-          </div>
-        </div>
-        
-        <div 
-          className={`${styles.statCard} ${styles.danger} ${activeFilter === 'danger' ? styles.activeCard : ''}`}
-          onClick={() => handleFilterClick('danger')}
-        >
-          <div className={styles.statIcon}>✕</div>
-          <div className={styles.statInfo}>
-            <span className={styles.statLabel}>Stok Habis</span>
-            <span className={styles.statValue}>{categoryStats['Stok Habis']} Item</span>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.searchGroup}>
           <Search size={16} className={styles.iconLeft} />
-          <input 
-            type="text" 
-            placeholder="Cari Produk" 
+          <input
+            type="text"
+            placeholder="Cari Produk"
             className={styles.searchInput}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
-        <button 
-          className={styles.btnAdd}
-          onClick={() => setShowAddModal(true)}
-        >
+        <button className={styles.btnAdd} onClick={() => setShowAddModal(true)}>
           <Plus size={18} /> Tambah Produk
         </button>
       </div>
 
-      {/* Table */}
-      <div className={styles.tableWrapper}>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Item</th>
-              <th>Kategori</th>
-              <th>Harga</th>
-              <th>Stok</th>
-              <th>AKSI</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentProducts.map((product, index) => (
-              <tr key={product.id}>
-                <td>{startIndex + index + 1}</td>
-                <td>{product.name}</td>
-                <td>{product.category}</td>
-                <td>{formatPrice(product.price)}</td>
-                <td>{product.stock}</td>
-                <td>
-                  <div className={styles.actionButtons}>
-                    <button 
-                      className={`${styles.actionBtn} ${styles.delete}`}
-                      onClick={() => handleDeleteClick(product)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <button 
-                      className={`${styles.actionBtn} ${styles.add}`}
-                      onClick={() => handleStockIncrease(product)}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </td>
+      {/* ✅ Tampilkan loading spinner */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+          ⏳ Memuat data produk...
+        </div>
+      ) : (
+        /* Table */
+        <div className={styles.tableWrapper}>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Item</th>
+                <th>Kategori</th>
+                <th>Harga</th>
+                <th>Stok</th>
+                <th>AKSI</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {currentProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: '#6b7280' }}>
+                    {searchQuery ? 'Produk tidak ditemukan' : 'Belum ada produk. Klik "Tambah Produk" untuk mulai.'}
+                  </td>
+                </tr>
+              ) : (
+                currentProducts.map((product, index) => (
+                  <tr key={product._id || product.id}>
+                    <td>{startIndex + index + 1}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* ✅ Tampilkan foto dari Cloudinary */}
+                        {(product.image || product.foto) && (
+                          <img
+                            src={product.image || product.foto}
+                            alt={product.name || product.nama}
+                            style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }}
+                          />
+                        )}
+                        {product.name || product.nama}
+                      </div>
+                    </td>
+                    <td>{typeof product.category === "object" ? product.category?.name : (product.kategori || product.category || "-")}</td>
+                    <td>{formatPrice(product.hargaJual || product.price)}</td>
+                    <td>{stokField(product)}</td>
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button
+                          className={`${styles.actionBtn} ${styles.delete}`}
+                          onClick={() => handleDeleteClick(product)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button
+                          className={`${styles.actionBtn} ${styles.add}`}
+                          onClick={() => handleStockIncrease(product)}
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination Footer */}
-      <div className={styles.tableFooter}>
-        <div className={styles.showRows}>
-          <span>Show</span>
-          <div style={{ position: 'relative', minWidth: '70px' }}>
+      {!loading && (
+        <div className={styles.tableFooter}>
+          <div className={styles.showRows}>
+            <span>Show</span>
             <Dropdown
-              options={[
-                { value: '5', label: '5' },
-                { value: '10', label: '10' },
-                { value: '20', label: '20' }
-              ]}
+              options={[{ value: '5', label: '5' }, { value: '10', label: '10' }, { value: '20', label: '20' }]}
               value={showRows}
-              onChange={handleRowsChange}
-              className="lexend-font"
+              onChange={(v) => { setShowRows(v); setCurrentPage(1); }}
             />
+            <span>per page</span>
           </div>
-          <span>per page</span>
-        </div>
-
-        <div className={styles.pagination}>
-          <span>{startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length}</span>
-          <button 
-            className={styles.pageNav}
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <div className={styles.pageNumbers}>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-              
-              return (
-                <button 
-                  key={pageNum}
-                  className={`${styles.pageBtn} ${currentPage === pageNum ? styles.active : ''}`}
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+          <div className={styles.pagination}>
+            <span>{startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length}</span>
+            <button className={styles.pageNav} onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>
+              <ChevronLeft size={18} />
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`${styles.pageBtn} ${currentPage === p ? styles.active : ''}`} onClick={() => setCurrentPage(p)}>
+                {p}
+              </button>
+            ))}
+            <button className={styles.pageNav} onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages || totalPages === 0}>
+              <ChevronRight size={18} />
+            </button>
           </div>
-          <button 
-            className={styles.pageNav}
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight size={18} />
-          </button>
         </div>
-      </div>
+      )}
 
-      {/* Add Product Modal */}
+      {/* ============================================================
+          MODAL — Tambah Produk Baru
+      ============================================================ */}
       {showAddModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent} style={{ maxWidth: '800px' }}>
@@ -437,130 +447,104 @@ export default function Stock() {
                 <X size={24} />
               </button>
             </div>
-
             <div className={styles.formBody}>
               <div className={styles.stockModalGrid}>
-                {/* Left side - Image upload */}
+                {/* Kiri: Upload foto */}
                 <div className={styles.imageSection}>
                   <div className={styles.imageUploadBox}>
-                    <X size={48} className={styles.placeholderIcon} />
+                    {addProductFormData.fotoPreview ? (
+                      <img src={addProductFormData.fotoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    ) : (
+                      <X size={48} className={styles.placeholderIcon} />
+                    )}
                   </div>
-                  <button className={styles.btnUpload}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Ubah Foto
-                  </button>
-                  
+                  {/* ✅ Input file yang benar untuk upload ke Cloudinary */}
+                  <label className={styles.btnUpload} style={{ cursor: 'pointer' }}>
+                    📷 Ubah Foto
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setAddProductFormData({
+                            ...addProductFormData,
+                            foto: file,
+                            fotoPreview: URL.createObjectURL(file),
+                          });
+                        }
+                      }}
+                    />
+                  </label>
                   <div className={styles.currentStock}>
                     <span className={styles.stockLabel}>Stok saat ini</span>
                     <span className={styles.stockNumber}>{addProductFormData.currentStock}</span>
                   </div>
-                  
-                  <button 
+                  <button
                     className={styles.btnAddStock}
-                    onClick={handleAddProductStockClick}
+                    onClick={() => setAddProductFormData(p => ({ ...p, currentStock: p.currentStock + 1 }))}
                   >
-                    <Plus size={16} />
-                    Tambah Stok
+                    <Plus size={16} /> Tambah Stok
                   </button>
                 </div>
 
-                {/* Right side - Form fields */}
+                {/* Kanan: Form fields */}
                 <div className={styles.formSection}>
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>Nama Item</label>
-                      <input 
-                        type="text" 
-                        className={styles.inputField}
+                      <input type="text" className={styles.inputField} placeholder="Masukkan nama"
                         value={addProductFormData.name}
-                        onChange={(e) => setAddProductFormData({...addProductFormData, name: e.target.value})}
-                        placeholder="Masukkan nama"
-                      />
+                        onChange={(e) => setAddProductFormData(p => ({ ...p, name: e.target.value }))} />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Harga Jual</label>
-                      <input 
-                        type="number" 
-                        className={styles.inputField}
+                      <input type="number" className={styles.inputField} placeholder="Masukkan harga jual"
                         value={addProductFormData.hargaJual}
-                        onChange={(e) => setAddProductFormData({...addProductFormData, hargaJual: e.target.value})}
-                        placeholder="Masukkan harga jual"
-                      />
+                        onChange={(e) => setAddProductFormData(p => ({ ...p, hargaJual: e.target.value }))} />
                     </div>
                   </div>
-
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>ID Item</label>
-                      <input 
-                        type="text" 
-                        className={styles.inputField}
+                      <input type="text" className={styles.inputField} placeholder="Masukkan ID"
                         value={addProductFormData.idItem}
-                        onChange={(e) => setAddProductFormData({...addProductFormData, idItem: e.target.value})}
-                        placeholder="Masukkan ID"
-                      />
+                        onChange={(e) => setAddProductFormData(p => ({ ...p, idItem: e.target.value }))} />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Tanggal Expired</label>
-                      <input 
-                        type="date" 
-                        className={styles.inputField}
+                      <input type="date" className={styles.inputField}
                         value={addProductFormData.tanggalExpired}
-                        onChange={(e) => setAddProductFormData({...addProductFormData, tanggalExpired: e.target.value})}
-                        placeholder="Masukkan tanggal expired"
-                      />
+                        onChange={(e) => setAddProductFormData(p => ({ ...p, tanggalExpired: e.target.value }))} />
                     </div>
                   </div>
-
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>Harga Beli</label>
-                      <input 
-                        type="number" 
-                        className={styles.inputField}
+                      <input type="number" className={styles.inputField} placeholder="Masukkan harga beli"
                         value={addProductFormData.hargaBeli}
-                        onChange={(e) => setAddProductFormData({...addProductFormData, hargaBeli: e.target.value})}
-                        placeholder="Masukkan harga beli"
-                      />
+                        onChange={(e) => setAddProductFormData(p => ({ ...p, hargaBeli: e.target.value }))} />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Kategori</label>
-                      <div style={{ border: 'none', padding: 0 }}>
-                        <Dropdown
-                          options={[
-                            { value: 'Makanan', label: 'Makanan' },
-                            { value: 'Minuman', label: 'Minuman' }
-                          ]}
-                          value={addProductFormData.category}
-                          onChange={(val) => setAddProductFormData({...addProductFormData, category: val})}
-                          placeholder="Pilih Kategori"
-                          className="lexend-font"
-                        />
-                      </div>
+                      <Dropdown
+                        options={categories.length > 0
+                          ? categories.map(c => ({ value: c._id, label: c.nama || c.name }))
+                          : [{ value: 'Makanan', label: 'Makanan' }, { value: 'Minuman', label: 'Minuman' }]
+                        }
+                        value={addProductFormData.category}
+                        onChange={(val) => setAddProductFormData(p => ({ ...p, category: val }))}
+                        placeholder="Pilih Kategori"
+                      />
                     </div>
                   </div>
-
                   <div className={styles.stockModalActions}>
-                    <div></div>
+                    <div />
                     <div className={styles.actionButtons}>
-                      <button 
-                        className={styles.btnCancel} 
-                        onClick={() => setShowAddModal(false)}
-                      >
-                        Batal
-                      </button>
-                      <button 
-                        className={styles.btnSave} 
-                        onClick={handleAddProduct}
-                      >
-                        Simpan
+                      <button className={styles.btnCancel} onClick={() => setShowAddModal(false)}>Batal</button>
+                      <button className={styles.btnSave} onClick={handleAddProduct} disabled={submitting}>
+                        {submitting ? '⏳ Menyimpan...' : 'Simpan'}
                       </button>
                     </div>
                   </div>
@@ -571,77 +555,9 @@ export default function Stock() {
         </div>
       )}
 
-      {/* Edit Product Modal */}
-      {showEditModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2>Edit Produk</h2>
-              <button className={styles.btnClose} onClick={() => setShowEditModal(false)}>
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className={styles.formBody}>
-              <div className={styles.formGroup}>
-                <label>Nama Produk</label>
-                <input 
-                  type="text" 
-                  className={styles.inputField}
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Masukkan nama produk"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Kategori</label>
-                <div style={{ border: 'none', padding: 0 }}>
-                  <Dropdown
-                    options={[
-                      { value: 'Makanan', label: 'Makanan' },
-                      { value: 'Minuman', label: 'Minuman' }
-                    ]}
-                    value={formData.category}
-                    onChange={(val) => setFormData({...formData, category: val})}
-                    placeholder="Pilih Kategori"
-                    className="lexend-font"
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Harga</label>
-                <input 
-                  type="number" 
-                  className={styles.inputField}
-                  value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  placeholder="Masukkan harga"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Stok</label>
-                <input 
-                  type="number" 
-                  className={styles.inputField}
-                  value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                  placeholder="Masukkan jumlah stok"
-                />
-              </div>
-
-              <div className={styles.formActions}>
-                <button className={styles.btnCancel} onClick={() => setShowEditModal(false)}>Batal</button>
-                <button className={styles.btnSave} onClick={handleEditProduct}>Simpan</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tambah Stok Modal */}
+      {/* ============================================================
+          MODAL — Update Stok
+      ============================================================ */}
       {showStockModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent} style={{ maxWidth: '800px' }}>
@@ -651,134 +567,76 @@ export default function Stock() {
                 <X size={24} />
               </button>
             </div>
-
             <div className={styles.formBody}>
               <div className={styles.stockModalGrid}>
-                {/* Left side - Image upload */}
                 <div className={styles.imageSection}>
                   <div className={styles.imageUploadBox}>
-                    <X size={48} className={styles.placeholderIcon} />
+                    {stockFormData.fotoPreview ? (
+                      <img src={stockFormData.fotoPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    ) : (
+                      <X size={48} className={styles.placeholderIcon} />
+                    )}
                   </div>
-                  <button className={styles.btnUpload}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Ubah Foto
-                  </button>
-                  
+                  <label className={styles.btnUpload} style={{ cursor: 'pointer' }}>
+                    📷 Ubah Foto
+                    <input type="file" accept="image/*" style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) setStockFormData(p => ({ ...p, foto: file, fotoPreview: URL.createObjectURL(file) }));
+                      }} />
+                  </label>
                   <div className={styles.currentStock}>
                     <span className={styles.stockLabel}>Stok saat ini</span>
                     <span className={styles.stockNumber}>{stockFormData.currentStock}</span>
                   </div>
-                  
-                  <button 
-                    className={styles.btnAddStock}
-                    onClick={handleAddStockClick}
-                  >
-                    <Plus size={16} />
-                    Tambah Stok
+                  <button className={styles.btnAddStock} onClick={() => setStockFormData(p => ({ ...p, currentStock: p.currentStock + 1 }))}>
+                    <Plus size={16} /> Tambah Stok
                   </button>
                 </div>
-
-                {/* Right side - Form fields */}
                 <div className={styles.formSection}>
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>Nama Item</label>
-                      <input 
-                        type="text" 
-                        className={styles.inputField}
-                        value={stockFormData.name}
-                        onChange={(e) => setStockFormData({...stockFormData, name: e.target.value})}
-                        placeholder="Masukkan nama"
-                      />
+                      <input type="text" className={styles.inputField} value={stockFormData.name}
+                        onChange={(e) => setStockFormData(p => ({ ...p, name: e.target.value }))} />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Harga Jual</label>
-                      <input 
-                        type="number" 
-                        className={styles.inputField}
-                        value={stockFormData.hargaJual}
-                        onChange={(e) => setStockFormData({...stockFormData, hargaJual: e.target.value})}
-                        placeholder="Masukkan harga jual"
-                      />
+                      <input type="number" className={styles.inputField} value={stockFormData.hargaJual}
+                        onChange={(e) => setStockFormData(p => ({ ...p, hargaJual: e.target.value }))} />
                     </div>
                   </div>
-
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>ID Item</label>
-                      <input 
-                        type="text" 
-                        className={styles.inputField}
-                        value={stockFormData.idItem}
-                        placeholder="Masukkan ID"
-                        readOnly
-                      />
+                      <input type="text" className={styles.inputField} value={stockFormData.idItem} readOnly />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Tanggal Expired</label>
-                      <input 
-                        type="date" 
-                        className={styles.inputField}
-                        value={stockFormData.tanggalExpired}
-                        onChange={(e) => setStockFormData({...stockFormData, tanggalExpired: e.target.value})}
-                        placeholder="Masukkan tanggal expired"
-                      />
+                      <input type="date" className={styles.inputField} value={stockFormData.tanggalExpired}
+                        onChange={(e) => setStockFormData(p => ({ ...p, tanggalExpired: e.target.value }))} />
                     </div>
                   </div>
-
                   <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                       <label>Harga Beli</label>
-                      <input 
-                        type="number" 
-                        className={styles.inputField}
-                        value={stockFormData.hargaBeli}
-                        onChange={(e) => setStockFormData({...stockFormData, hargaBeli: e.target.value})}
-                        placeholder="Masukkan harga beli"
-                      />
+                      <input type="number" className={styles.inputField} value={stockFormData.hargaBeli}
+                        onChange={(e) => setStockFormData(p => ({ ...p, hargaBeli: e.target.value }))} />
                     </div>
-
                     <div className={styles.formGroup}>
                       <label>Kategori</label>
-                      <input 
-                        type="text" 
-                        className={styles.inputField}
-                        value={stockFormData.category}
-                        onChange={(e) => setStockFormData({...stockFormData, category: e.target.value})}
-                        placeholder="Masukkan kategori barang"
-                      />
+                      <input type="text" className={styles.inputField} value={stockFormData.category}
+                        onChange={(e) => setStockFormData(p => ({ ...p, category: e.target.value }))} />
                     </div>
                   </div>
-
                   <div className={styles.stockModalActions}>
-                    <button 
-                      className={styles.btnDeleteItem}
-                      onClick={() => {
-                        setShowStockModal(false);
-                        handleDeleteClick(selectedProduct);
-                      }}
-                    >
+                    <button className={styles.btnDeleteItem} onClick={() => { setShowStockModal(false); handleDeleteClick(selectedProduct); }}>
                       <Trash2 size={16} />
                     </button>
-                    
                     <div className={styles.actionButtons}>
-                      <button 
-                        className={styles.btnCancel} 
-                        onClick={() => setShowStockModal(false)}
-                      >
-                        Batal
-                      </button>
-                      <button 
-                        className={styles.btnSave} 
-                        onClick={handleSaveStock}
-                      >
-                        Simpan
+                      <button className={styles.btnCancel} onClick={() => setShowStockModal(false)}>Batal</button>
+                      <button className={styles.btnSave} onClick={handleSaveStock} disabled={submitting}>
+                        {submitting ? '⏳ Menyimpan...' : 'Simpan'}
                       </button>
                     </div>
                   </div>
@@ -789,49 +647,34 @@ export default function Stock() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* ============================================================
+          MODAL — Konfirmasi Hapus
+      ============================================================ */}
       {showDeleteModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent} style={{ maxWidth: '500px' }}>
             <div className={styles.deleteModalBody}>
               <div className={styles.deleteImageBox}>
-                <X size={48} className={styles.placeholderIcon} />
+                {selectedProduct?.foto ? (
+                  <img src={selectedProduct.foto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                ) : (
+                  <X size={48} className={styles.placeholderIcon} />
+                )}
               </div>
-              
               <div className={styles.deleteFormFields}>
                 <div className={styles.formGroup}>
                   <label>Nama Item</label>
-                  <input 
-                    type="text" 
-                    className={styles.inputField}
-                    value={selectedProduct?.name}
-                    readOnly
-                  />
+                  <input type="text" className={styles.inputField} value={selectedProduct?.nama || selectedProduct?.name} readOnly />
                 </div>
-
                 <div className={styles.formGroup}>
                   <label>ID Item</label>
-                  <input 
-                    type="text" 
-                    className={styles.inputField}
-                    value={`ITEM-${selectedProduct?.id}`}
-                    readOnly
-                  />
+                  <input type="text" className={styles.inputField} value={selectedProduct?.idItem || selectedProduct?._id?.substring(0, 8)} readOnly />
                 </div>
               </div>
-
               <div className={styles.deleteActions}>
-                <button 
-                  className={styles.btnCancelDelete} 
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Batal
-                </button>
-                <button 
-                  className={styles.btnConfirmDelete} 
-                  onClick={confirmDelete}
-                >
-                  Hapus
+                <button className={styles.btnCancelDelete} onClick={() => setShowDeleteModal(false)}>Batal</button>
+                <button className={styles.btnConfirmDelete} onClick={confirmDelete} disabled={submitting}>
+                  {submitting ? '⏳ Menghapus...' : 'Hapus'}
                 </button>
               </div>
             </div>
@@ -839,7 +682,7 @@ export default function Stock() {
         </div>
       )}
 
-      {/* Notification Toast */}
+      {/* Toast Notification */}
       {showNotification && (
         <div className={styles.notification}>
           <CheckCircle size={20} />

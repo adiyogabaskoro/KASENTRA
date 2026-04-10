@@ -1,3 +1,7 @@
+// ============================================================
+// KASENTRA — App.jsx (VERSI BARU — dengan Protected Routes)
+// ============================================================
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
@@ -15,16 +19,25 @@ import StatusToko from './pages/StatusToko';
 import Laporan from './pages/Laporan';
 import Stock from './pages/Stock';
 import Category from './pages/Category';
+import { ProtectedRoute } from './hooks/useAuth.jsx'; // ← IMPORT
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Halaman Login — publik */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
-        
-        {/* Owner Routes */}
-        <Route path="/dashboard" element={<Layout />}>
+
+        {/* Owner Routes — hanya bisa diakses role 'owner' */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['owner']}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="laporan" element={<Laporan />} />
           <Route path="keuangan" element={<Keuangan />} />
@@ -33,21 +46,36 @@ function App() {
           <Route path="setting" element={<Setting />} />
         </Route>
 
-        {/* Kasir Routes */}
-        <Route path="/kasir" element={<LayoutKasir />}>
+        {/* Kasir Routes — hanya bisa diakses role 'kasir' */}
+        <Route
+          path="/kasir"
+          element={
+            <ProtectedRoute allowedRoles={['kasir']}>
+              <LayoutKasir />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<DashboardKasir />} />
           <Route path="transaksi-kasir" element={<MenuKasir />} />
           <Route path="transaksi" element={<TransaksiKasir />} />
           <Route path="setting" element={<Setting />} />
         </Route>
 
-        {/* Operator Routes */}
-        <Route path="/operator" element={<LayoutOperator />}>
+        {/* Operator Routes — hanya bisa diakses role 'operator' */}
+        <Route
+          path="/operator"
+          element={
+            <ProtectedRoute allowedRoles={['operator']}>
+              <LayoutOperator />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<Stock />} />
           <Route path="setting" element={<Setting />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Fallback — halaman tidak ditemukan → ke login */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
