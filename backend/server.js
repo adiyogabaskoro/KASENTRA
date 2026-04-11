@@ -1,19 +1,24 @@
-// server.js
-// ==========================================
-// INI adalah "pintu masuk" aplikasi backend kamu
-// Semua dimulai dari sini
-// ==========================================
+// ============================================================
+// KASENTRA — server.js [FIXED v2 — Production Ready]
+// FIX: Tambahkan helmet, rate limiting, morgan untuk logging
+// FIX: Error handler lebih informatif tapi aman di production
+// ============================================================
 
-// 1. Import semua package yang dibutuhkan
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// 2. Import koneksi database
-const connectDB = require('./config/db');
+// Keamanan tambahan (install: npm install helmet express-rate-limit)
+let helmet, rateLimit;
+try {
+  helmet = require('helmet');
+  rateLimit = require('express-rate-limit');
+} catch {
+  // Optional — tidak wajib tapi direkomendasikan
+}
 
-// 3. Import semua routes (daftar URL/endpoint)
+const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -21,36 +26,27 @@ const transactionRoutes = require('./routes/transactionRoutes');
 const financeRoutes = require('./routes/financeRoutes');
 const userRoutes = require('./routes/userRoutes');
 const settingRoutes = require('./routes/settingRoutes');
-
-// 4. Import error handler
 const { errorHandler } = require('./middleware/errorMiddleware');
 
-// 5. Load variabel dari file .env
 dotenv.config();
-
-// 6. Hubungkan ke MongoDB
 connectDB();
 
-// 7. Buat aplikasi Express
 const app = express();
 
-// ==========================================
-// MIDDLEWARE GLOBAL
-// Middleware = fungsi yang dijalankan SEBELUM request sampai ke controller
-// ==========================================
+// ── Security headers
+if (helmet) app.use(helmet());
 
-// Izinkan request dari frontend React (localhost:5173)
-// CORS: izinkan beberapa origin (local dev + production Vercel)
+// ── CORS — support local dev + production Vercel
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.FRONTEND_URL,        // set di .env backend (wajib saat deploy)
-  process.env.FRONTEND_URL_PROD,   // opsional: URL Vercel production
-].filter(Boolean); // hapus nilai null/undefined
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_PROD,
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Izinkan request tanpa origin (Postman, server-to-server)
+    // Izinkan Postman / server-to-server (tidak ada origin)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error(`CORS blocked: ${origin}`));
@@ -58,16 +54,21 @@ app.use(cors({
   credentials: true,
 }));
 
-// Izinkan server membaca JSON dari body request
-app.use(express.json());
+// ── Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Izinkan server membaca form data
-app.use(express.urlencoded({ extended: true }));
+// ── Rate limiting untuk endpoint auth (cegah brute force)
+if (rateLimit) {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 menit
+    max: 20,                   // max 20 request login per 15 menit
+    message: { success: false, message: 'Terlalu banyak percobaan login. Coba lagi setelah 15 menit.' },
+  });
+  app.use('/api/auth/login', authLimiter);
+}
 
-// ==========================================
-// ROUTES (Daftar URL / Endpoint API)
-// Semua request ke /api/auth → pergi ke authRoutes
-// ==========================================
+// ── Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -76,18 +77,25 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingRoutes);
 
-// Route test - untuk mengecek apakah server berjalan
+// ── Health check
 app.get('/', (req, res) => {
-  res.json({ message: '✅ Kasentra API berjalan dengan baik!' });
+  res.json({
+    message: '✅ Kasentra API berjalan',
+    version: '2.0.0',
+    env: process.env.NODE_ENV || 'development',
+  });
 });
 
-// Error handler harus selalu di PALING BAWAH
+// ── 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ success: false, message: `Route ${req.originalUrl} tidak ditemukan` });
+});
+
+// ── Global error handler (WAJIB paling bawah)
 app.use(errorHandler);
 
-// ==========================================
-// JALANKAN SERVER
-// ==========================================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server Kasentra berjalan di http://localhost:${PORT}`);
+  console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
 });

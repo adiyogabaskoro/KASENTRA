@@ -1,48 +1,33 @@
 // ============================================================
-// KASENTRA — src/services/api.js
-// Axios instance terpusat untuk semua request ke backend
+// KASENTRA — src/services/api.js  [FIXED v2]
 // ============================================================
 
 import axios from 'axios';
 
-// Ambil base URL dari .env (VITE_API_URL=http://localhost:5000/api)
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Buat instance axios dengan config default
 const api = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// ============================================================
-// REQUEST INTERCEPTOR
-// Otomatis tambahkan token JWT ke setiap request
-// ============================================================
+// Request interceptor — inject JWT token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ============================================================
-// RESPONSE INTERCEPTOR
-// Handle token expired (401) secara otomatis
-// ============================================================
+// Response interceptor — handle 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired atau tidak valid — paksa logout
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Redirect ke halaman login
       window.location.href = '/';
     }
     return Promise.reject(error);
@@ -56,17 +41,14 @@ export default api;
 // AUTH API
 // ============================================================
 export const authAPI = {
-  // Login — kirim username, password, role ke backend
   login: (data) => api.post('/auth/login', data),
-
-  // Logout (opsional — hapus token di localStorage)
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
-
-  // Ambil data user yang sedang login
   getMe: () => api.get('/auth/me'),
+  // FIX: Gunakan endpoint yang benar untuk ganti password
+  changePassword: (data) => api.put('/auth/change-password', data),
 };
 
 
@@ -74,29 +56,19 @@ export const authAPI = {
 // PRODUCT API
 // ============================================================
 export const productAPI = {
-  // Ambil semua produk (bisa dengan filter/search)
   getAll: (params) => api.get('/products', { params }),
-
-  // Ambil 1 produk berdasarkan ID
   getById: (id) => api.get(`/products/${id}`),
-
-  // Tambah produk baru (dengan gambar — gunakan FormData)
   create: (formData) =>
     api.post('/products', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-
-  // Edit produk
   update: (id, formData) =>
     api.put(`/products/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-
-  // Hapus produk
   delete: (id) => api.delete(`/products/${id}`),
-
-  // Update stok saja
-  updateStock: (id, data) => api.patch(`/products/${id}/stock`, data),
+  // FIX: Endpoint yang benar adalah PUT /:id/add-stock (bukan PATCH /:id/stock)
+  addStock: (id, data) => api.put(`/products/${id}/add-stock`, data),
 };
 
 
@@ -115,37 +87,37 @@ export const categoryAPI = {
 // TRANSACTION API
 // ============================================================
 export const transactionAPI = {
-  // Ambil semua transaksi (bisa filter by tanggal, dll)
   getAll: (params) => api.get('/transactions', { params }),
-
-  // Buat transaksi baru (saat kasir checkout)
   create: (data) => api.post('/transactions', data),
-
-  // Ambil detail 1 transaksi
   getById: (id) => api.get(`/transactions/${id}`),
+  // FIX: Tambahkan dashboard stats yang sebelumnya tidak dipakai
+  getDashboardStats: () => api.get('/transactions/dashboard-stats'),
 };
 
 
 // ============================================================
-// FINANCE API (Keuangan manual)
+// FINANCE API
 // ============================================================
 export const financeAPI = {
   getAll: (params) => api.get('/finance', { params }),
   create: (data) => api.post('/finance', data),
+  // FIX: update finance sudah ada di backend — dipakai di Keuangan.jsx (baru)
   update: (id, data) => api.put(`/finance/${id}`, data),
   delete: (id) => api.delete(`/finance/${id}`),
 };
 
 
 // ============================================================
-// USER / OPERATOR API
+// USER API
 // ============================================================
 export const userAPI = {
   getAll: () => api.get('/users'),
   create: (data) => api.post('/users', data),
-  update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
-  toggleStatus: (id) => api.patch(`/users/${id}/toggle-status`),
+  // FIX: Method harus PUT bukan PATCH, sesuai route backend
+  toggleStatus: (id) => api.put(`/users/${id}/toggle-status`),
+  // FIX: URL yang benar untuk reset password
+  resetPassword: (id, data) => api.put(`/users/${id}/reset-password`, data),
 };
 
 
@@ -154,9 +126,12 @@ export const userAPI = {
 // ============================================================
 export const settingAPI = {
   get: () => api.get('/settings'),
-  update: (formData) =>
-    api.put('/settings', formData, {
+  // FIX: update setting (tanpa logo) pakai JSON biasa
+  update: (data) => api.put('/settings', data),
+  // FIX: Upload logo menggunakan endpoint terpisah PUT /settings/logo
+  updateLogo: (formData) =>
+    api.put('/settings/logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  toggleStatus: (data) => api.put('/settings/toggle-status', data), // PUT sesuai route backend
+  toggleStatus: () => api.put('/settings/toggle-status'),
 };
